@@ -21,11 +21,17 @@ const (
 	ARGS_PATTERNS_SHORT  string = "n"
 	ARGS_PATTERNS_DES    string = "Specify file patterns"
 
-	ERR_FMT_MSG string = "Error: %v"
+	ERR_FMT_MSG            string = "Error: %v"
+	ERR_INVALID_BUILD_MODE string = "Invalid build mode: %s options = build|test"
 
-	MODE_BUILD = "build"
-	MODE_RUN   = "run"
-	MODE_TEST  = "test"
+	MSG_BUILD_START string = "Build Started..."
+
+	MSG_SUCCESS string = "SUCCESS"
+	MSG_FAILED  string = "FAILED"
+
+	MODE_BUILD string = "build"
+	MODE_RUN   string = "run"
+	MODE_TEST  string = "test"
 )
 
 type Options struct {
@@ -36,18 +42,22 @@ type Options struct {
 
 func check_mode(mode string) bool {
 	return mode != MODE_BUILD ||
-		mode != MODE_RUN ||
+		// mode != MODE_RUN ||
 		mode != MODE_TEST
 }
 
 func go_build(o *Options) {
+	log.Println(MSG_BUILD_START)
 	cmd := exec.Command("go", "build")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Dir = o.Filepath
 	err := cmd.Run()
 	if err != nil {
-		log.Fatalf(ERR_FMT_MSG, err)
+		log.Printf(ERR_FMT_MSG, err)
+		log.Println(MSG_FAILED)
+	} else {
+		log.Println(MSG_SUCCESS)
 	}
 }
 
@@ -58,7 +68,7 @@ func go_run(o *Options) {
 	cmd.Dir = o.Filepath
 	err := cmd.Run()
 	if err != nil {
-		log.Fatalf(ERR_FMT_MSG, err)
+		log.Printf(ERR_FMT_MSG, err)
 	}
 }
 
@@ -69,7 +79,7 @@ func go_test(o *Options) {
 	cmd.Dir = o.Filepath
 	err := cmd.Run()
 	if err != nil {
-		log.Fatalf(ERR_FMT_MSG, err)
+		log.Printf(ERR_FMT_MSG, err)
 	}
 }
 
@@ -80,15 +90,18 @@ func handle_event(o *Options, event fsnotify.Event) {
 			log.Printf(ERR_FMT_MSG, err)
 		}
 
-		if match {
-			log.Printf("%s with pattern %s was changed", event.Name, pattern)
-			switch o.BuildMode {
-			case MODE_BUILD:
-				go_build(o)
-			case MODE_RUN:
-				go_run(o)
-			case MODE_TEST:
-				go_test(o)
+		if event.Op == fsnotify.Write ||
+			event.Op == fsnotify.Create ||
+			event.Op == fsnotify.Remove {
+			if match {
+				switch o.BuildMode {
+				case MODE_BUILD:
+					go_build(o)
+				case MODE_RUN:
+					go_run(o)
+				case MODE_TEST:
+					go_test(o)
+				}
 			}
 		}
 	}
@@ -159,7 +172,8 @@ func main() {
 
 		if arg_mode != "" && check_mode(arg_mode) {
 			options.BuildMode = arg_mode
-		} else {
+		} else if !check_mode(arg_mode) {
+			log.Fatalf(ERR_INVALID_BUILD_MODE, arg_mode)
 		}
 
 		if arg_filepath != "" {
