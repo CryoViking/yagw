@@ -13,7 +13,7 @@ import (
 const (
 	ARGS_MODE            string = "mode"
 	ARGS_MODE_SHORT      string = "m"
-	ARGS_MODE_DES        string = "Run build/run/test"
+	ARGS_MODE_DES        string = "build|test"
 	ARGS_ROOT_PATH       string = "root-path"
 	ARGS_ROOT_PATH_SHORT string = "r"
 	ARGS_ROOT_PATH_DES   string = "Set root-path to watch"
@@ -41,9 +41,9 @@ type Options struct {
 }
 
 func check_mode(mode string) bool {
-	return mode != MODE_BUILD ||
-		// mode != MODE_RUN ||
-		mode != MODE_TEST
+	return mode == MODE_BUILD ||
+		mode == MODE_TEST ||
+		mode == ""
 }
 
 func go_build(o *Options) {
@@ -145,7 +145,7 @@ func main() {
 		&cli.StringFlag{
 			Name:    ARGS_MODE,
 			Aliases: []string{ARGS_MODE_SHORT},
-			Usage:   ARGS_PATTERNS_DES,
+			Usage:   ARGS_MODE_DES,
 		},
 		&cli.StringFlag{
 			Name:    ARGS_ROOT_PATH,
@@ -158,6 +158,10 @@ func main() {
 			Usage:   ARGS_PATTERNS_DES,
 		},
 	}
+
+	app.Name = "neo-gowatch"
+	app.Usage = "auto build/test go projects while developing"
+	app.UsageText = "noe-gowatch [GLOBAL OPTIONS]"
 
 	app.Action = func(c *cli.Context) error {
 		options := Options{
