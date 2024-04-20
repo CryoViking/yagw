@@ -159,9 +159,9 @@ func main() {
 		},
 	}
 
-	app.Name = "neo-gowatch"
+	app.Name = "yagw"
 	app.Usage = "auto build/test go projects while developing"
-	app.UsageText = "noe-gowatch [GLOBAL OPTIONS]"
+	app.UsageText = "yagw [GLOBAL OPTIONS]"
 
 	app.Action = func(c *cli.Context) error {
 		options := Options{
